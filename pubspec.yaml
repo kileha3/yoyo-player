@@ -1,4 +1,4 @@
-name: yoyo_player_revamp
+name: yoyo_player
 description: yoyo_player is a video player that allows you to select HLS video
   streaming by selecting the quality
 version: 0.1.1
