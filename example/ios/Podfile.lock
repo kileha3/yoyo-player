@@ -1,10 +1,10 @@
 PODS:
   - Flutter (1.0.0)
+  - flutter_screen_wake (0.0.1):
+    - Flutter
   - orientation (0.0.1):
     - Flutter
   - path_provider (0.0.1):
-    - Flutter
-  - screen (0.0.1):
     - Flutter
   - video_player (0.0.1):
     - Flutter
@@ -13,34 +13,34 @@ PODS:
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
+  - flutter_screen_wake (from `.symlinks/plugins/flutter_screen_wake/ios`)
   - orientation (from `.symlinks/plugins/orientation/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
-  - screen (from `.symlinks/plugins/screen/ios`)
   - video_player (from `.symlinks/plugins/video_player/ios`)
   - wakelock (from `.symlinks/plugins/wakelock/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
+  flutter_screen_wake:
+    :path: ".symlinks/plugins/flutter_screen_wake/ios"
   orientation:
     :path: ".symlinks/plugins/orientation/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
-  screen:
-    :path: ".symlinks/plugins/screen/ios"
   video_player:
     :path: ".symlinks/plugins/video_player/ios"
   wakelock:
     :path: ".symlinks/plugins/wakelock/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
+  flutter_screen_wake: 4d3c2b43943ea81bd5e591fd4e639ea537f4ca5e
   orientation: 6c9203efe86ce4cff379756910f18b2d745628c3
   path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
-  screen: abd91ca7bf3426e1cc3646d27e9b2358d6bf07b0
   video_player: 9cc823b1d9da7e8427ee591e8438bfbcde500e6e
-  wakelock: bfc7955c418d0db797614075aabbc58a39ab5107
+  wakelock: d0fc7c864128eac40eba1617cb5264d9c940b46f
 
 PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
 
-COCOAPODS: 1.10.0
+COCOAPODS: 1.11.1

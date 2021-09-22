@@ -1,85 +1,100 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:yoyo_player/src/responses/play_response.dart';
+import 'package:yoyo_player/src/source/video_style.dart';
 
 Widget bottomBar(
     {VideoPlayerController? controller,
-    String? videoSeek,
-    String? videoDuration,
-    Widget? backwardIcon,
-    Widget? forwardIcon,
+    required double spaceBetweenControls,
+    Duration? videoDuration,
+    Duration? videoSeekTo,
+    VideoStyle? videoStyle,
+    required bool fullScreen,
     required bool showMenu,
+    required Function (Duration duration) onSeekChange,
+    Function? onFullScreen,
     Function? play}) {
   return showMenu
       ? Align(
           alignment: Alignment.bottomCenter,
           child: Container(
-            height: 40,
+            height: 80,
             child: Padding(
               padding: EdgeInsets.all(0.0),
-              child: Stack(
+              child: Column(
                 children: [
-                  Column(
-                    children: [
-                      VideoProgressIndicator(
-                        controller!,
-                        allowScrubbing: true,
-                        colors: VideoProgressColors(
-                            playedColor: Color.fromARGB(250, 0, 255, 112)),
-                        padding: EdgeInsets.only(left: 5.0, right: 5),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(left: 5.0, right: 5.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              videoSeek!,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                            Text(
-                              videoDuration!,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                   Align(
                     alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: EdgeInsets.all(5.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          InkWell(
-                              onTap: () {
-                                rewind(controller);
-                              },
-                              child: backwardIcon),
-                          InkWell(
-                            onTap: play as void Function()?,
-                            child: Icon(
-                              controller.value.isPlaying
-                                  ? Icons.pause_circle_outline
-                                  : Icons.play_circle_outline,
-                              color: Colors.white,
-                              size: 35,
-                            ),
-                          ),
-                          InkWell(
-                              onTap: () {
-                                fastForward(controller: controller);
-                              },
-                              child: forwardIcon),
-                        ],
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        InkWell(
+                            onTap: () {
+                              rewind(controller!);
+                            },
+                            child: videoStyle?.backward),
+                        SizedBox(width: spaceBetweenControls),
+                        InkWell(
+                          onTap: play as void Function()?,
+                          child: controller!.value.isPlaying
+                              ? videoStyle?.pause
+                              : videoStyle?.play,
+                        ),
+                        SizedBox(width: spaceBetweenControls),
+                        InkWell(
+                            onTap: () {
+                              fastForward(controller: controller);
+                            },
+                            child: videoStyle?.forward),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(10, 0, 5, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: Text(
+                          convertDurationToString(videoSeekTo != null ? videoSeekTo : Duration(milliseconds: 0)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.white),
+                          textAlign: TextAlign.end,
+                        )),
+                        Expanded(
+                            flex: 6,
+                            child: Slider(
+                                thumbColor: videoStyle?.thumbColor,
+                                activeColor: videoStyle?.playedColor,
+                                inactiveColor: videoStyle?.sliderColor,
+                                min: 0.0,
+                                value: videoSeekTo!.inSeconds.toDouble(),
+                                max: videoDuration!.inSeconds.toDouble(),
+                                onChanged: (value) {
+                                  onSeekChange(Duration(seconds: value.toInt()));
+                                })),
+                        Expanded(
+                          flex: 2,
+                            child: Row(
+                              children: [
+                                Text(
+                                  convertDurationToString (videoDuration != null
+                                      ? videoDuration
+                                      : Duration(milliseconds: 0)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                                SizedBox(width: fullScreen ? 20:10),
+                                InkWell(
+                                  child: fullScreen
+                                      ? videoStyle?.fullscreenExit
+                                      : videoStyle?.fullscreen,
+                                  onTap: onFullScreen as void Function()?,
+                                )
+                              ],
+                            ))
+                      ],
                     ),
                   ),
                 ],
@@ -88,4 +103,16 @@ Widget bottomBar(
           ),
         )
       : Container();
+}
+
+String convertDurationToString(Duration duration) {
+  var minutes = duration.inMinutes.toString();
+  if (minutes.length == 1) {
+    minutes = '0' + minutes;
+  }
+  var seconds = (duration.inSeconds % 60).toString();
+  if (seconds.length == 1) {
+    seconds = '0' + seconds;
+  }
+  return "$minutes:$seconds";
 }
