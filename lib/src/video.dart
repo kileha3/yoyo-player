@@ -172,6 +172,9 @@ class _YoYoPlayerState extends State<YoYoPlayer>
       print("Current playing at $currentPlayingIndex");
       currentm3u8Data = M3U8pass(label: widget.filterQuality.first, dataURL: url);
       urlCheck(currentm3u8Data.dataURL!);
+      if (widget.onPlaying != null) {
+        widget.onPlaying!(widget.urls[currentPlayingIndex]);
+      }
     }
   }
 
@@ -491,9 +494,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   void listener() async {
     if (controller!.value.isInitialized && controller!.value.isPlaying) {
       wasPlaying = true;
-      if(widget.onPlaying != null){
-        widget.onPlaying!(widget.urls[currentPlayingIndex]);
-      }
 
       if (!await Wakelock.enabled) {
         await Wakelock.enable();
