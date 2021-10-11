@@ -11,7 +11,10 @@ Widget bottomBar(
     VideoStyle? videoStyle,
     required bool fullScreen,
     required bool showMenu,
+    required bool showNext,
+    required bool showPrevious,
     required Function (Duration duration) onSeekChange,
+    Function(bool next) ? onSkipNext,
     Function? onFullScreen,
     Function? play}) {
   return showMenu
@@ -31,6 +34,12 @@ Widget bottomBar(
                       children: [
                         InkWell(
                             onTap: () {
+                              onSkipNext!(false);
+                            },
+                            child: videoStyle?.previous),
+                        SizedBox(width: spaceBetweenControls),
+                        InkWell(
+                            onTap: () {
                               rewind(controller!);
                             },
                             child: videoStyle?.backward),
@@ -47,6 +56,12 @@ Widget bottomBar(
                               fastForward(controller: controller);
                             },
                             child: videoStyle?.forward),
+                        SizedBox(width: spaceBetweenControls),
+                        InkWell(
+                            onTap: () {
+                              onSkipNext!(true);
+                            },
+                            child: videoStyle?.next),
                       ],
                     ),
                   ),

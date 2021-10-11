@@ -23,26 +23,10 @@ class YoYoPlayer extends StatefulWidget {
   ///```dart
   ///url:"https://example.com/index.m3u8";
   ///```
-  final String url;
+  final List<String> urls;
 
   Duration? seekToDuration;
 
-  ///Video Player  style
-  ///```dart
-  ///videoStyle : VideoStyle(
-  ///     play =  Icon(Icons.play_arrow),
-  ///     pause = Icon(Icons.pause),
-  ///     fullScreen =  Icon(Icons.fullScreen),
-  ///     forward =  Icon(Icons.skip_next),
-  ///     backward =  Icon(Icons.skip_previous),
-  ///     playedColor = Colors.green,
-  ///     qualitystyle = const TextStyle(
-  ///     color: Colors.white,),
-  ///      qaShowStyle = const TextStyle(
-  ///      color: Colors.white,
-  ///    ),
-  ///   );
-  ///```
   final VideoStyle? videoStyle;
 
   /// Video Loading Style
@@ -59,29 +43,22 @@ class YoYoPlayer extends StatefulWidget {
   /// video Type
   final void Function(String videoType)? onPlayingVideo;
 
+  final void Function()? onPlayEnd; 
+
+  final void Function(String url)? onPlaying; 
+
   final List<String> filterQuality;
 
-  ///
-  /// ```dart
-  /// YoYoPlayer(
-  /// //url = (m3u8[hls],.mp4,.mkv,)
-  ///   url : "",
-  /// //video style
-  ///   videoStyle : VideoStyle(),
-  /// //video loading style
-  ///   videoLoadingStyle : VideoLoadingStyle(),
-  /// //video aspect ratio
-  ///   aspectRatio : 16/9,
-  /// )
-  /// ```
   YoYoPlayer({
     Key? key,
-    required this.url,
+    required this.urls,
     required this.aspectRatio,
     this.videoStyle,
     this.videoLoadingStyle,
     this.onFullScreen,
     this.onPlayingVideo,
+    this.onPlayEnd,
+    this.onPlaying,
     this.seekToDuration = const Duration(),
     this.filterQuality = const ["Auto","SD", "HD", "Full HD", "UHD", "4K"],
     this.onPlayerDurationChanged,
@@ -129,7 +106,12 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   // video status
   bool? offline;
 
-    String? qualityLabel = "Auto";
+  bool wasPlaying = false;
+
+  int currentPlayingIndex = -1;
+
+  late M3U8pass currentm3u8Data;
+
   // time for duration
   Timer? showTime;
   //Current ScreenSize
@@ -137,8 +119,7 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   //
   @override
   void initState() {
-    // getSub();
-    urlCheck(widget.url);
+    _playNext();
     super.initState();
 
     /// Control bar animation
@@ -172,7 +153,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
             }
           });
         }
-        //
         widgetsBinding.scheduleFrame();
       });
     });
@@ -182,6 +162,17 @@ class _YoYoPlayerState extends State<YoYoPlayer>
       DeviceOrientation.landscapeRight,
     ]);
     FlutterScreenWake.keepOn(true);
+  }
+
+  _playNext({bool next = true}){
+    currentPlayingIndex += next ? 1 : -1;
+
+    if(currentPlayingIndex >= 0 && widget.urls.length >= currentPlayingIndex){
+      final url = widget.urls[currentPlayingIndex];
+      print("Current playing at $currentPlayingIndex");
+      currentm3u8Data = M3U8pass(label: widget.filterQuality.first, dataURL: url);
+      urlCheck(currentm3u8Data.dataURL!);
+    }
   }
 
   @override
@@ -220,7 +211,7 @@ class _YoYoPlayerState extends State<YoYoPlayer>
       aspectRatio: fullScreen
           ? calculateAspectRatio(context, screenSize)
           : widget.aspectRatio,
-      child: controller!.value.isInitialized
+      child: controller != null && (controller!.value.isInitialized || controller!.value.isPlaying)
           ? Stack(children: videoChildren)
           : widget.videoLoadingStyle!.loading,
     );
@@ -234,7 +225,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
             child: Container(
               height: 40,
               width: double.infinity,
-              // color: Colors.yellow,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -242,7 +232,8 @@ class _YoYoPlayerState extends State<YoYoPlayer>
                     width: 5,
                   ),
                   topChip(
-                    Text(qualityLabel!, style: widget.videoStyle!.qualitystyle),
+                    Text(currentm3u8Data.label!, style: widget.videoStyle!.qualitystyle.qualitystyle),
+                    widget.videoStyle!.qualitystyle.qualityColor,
                     () {
                       // quality function
                       setState(() {
@@ -271,20 +262,17 @@ class _YoYoPlayerState extends State<YoYoPlayer>
                 child: Column(
                   children: yoyo.map((e) => InkWell(
                             onTap: () {
-                              qualityLabel = e.label;
                               m3u8show = false;
                               onSelectQuality(e);
-                              print(
-                                  "--- quality select ---\nquality : ${e.dataQuality}\nlink : ${e.dataURL}");
-                            },
+                              },
                             child: Container(
                                 width: 90,
-                                color: Colors.grey,
+                                color: widget.videoStyle!.qualitystyle.dropDownColor,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(
                                     "${e.label}",
-                                    style: widget.videoStyle!.qaShowStyle,
+                                    style: widget.videoStyle!.qualitystyle.dropDownText,
                                   ),
                                 )),
                           ))
@@ -305,6 +293,7 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   }
 
   Widget btm() {
+    final lastIndex = widget.urls.length - 1;
     return showMenu
         ? bottomBar(
             controller: controller,
@@ -314,6 +303,12 @@ class _YoYoPlayerState extends State<YoYoPlayer>
             videoStyle: widget.videoStyle,
             showMenu: showMenu,
             fullScreen: fullScreen,
+            onSkipNext: (next) {
+              togglePlay();
+              _playNext(next: next);
+            },
+            showNext: lastIndex > currentPlayingIndex ,
+            showPrevious: lastIndex >= currentPlayingIndex && currentPlayingIndex > 1,
             onFullScreen: () => toggleFullScreen(),
             onSeekChange: onSeekChanged,
             play: () => togglePlay())
@@ -331,8 +326,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
     final netRegex = new RegExp(r'^(http|https):\/\/([\w.]+\/?)\S*');
     final isNetwork = netRegex.hasMatch(url);
     final a = Uri.parse(url);
-
-    print("parse url data end : ${a.pathSegments.last}");
     if (isNetwork) {
       setState(() {
         offline = false;
@@ -341,7 +334,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
         setState(() {
           playType = "MKV";
         });
-        print("urlEnd : mkv");
         if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MKV");
 
         videoControlSetup(url);
@@ -349,31 +341,27 @@ class _YoYoPlayerState extends State<YoYoPlayer>
         setState(() {
           playType = "MP4";
         });
-        print("urlEnd : mp4 $playType");
         if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MP4");
-
-        print("urlEnd : mp4");
         videoControlSetup(url);
       } else if (a.pathSegments.last.endsWith("m3u8")) {
         setState(() {
           playType = "HLS";
         });
-        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("M3U8");
 
-        print("urlEnd : m3u8");
+        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("M3U8");
+        setState(() {
+          currentm3u8Data = M3U8pass(dataURL: url, 
+          label: widget.filterQuality.first);
+        });
         videoControlSetup(url);
         getM3U8(url);
       } else {
-        print("urlEnd : null");
         videoControlSetup(url);
         getM3U8(url);
       }
-      print("--- Current Video Status ---\noffline : $offline");
     } else {
       setState(() {
         offline = true;
-        print(
-            "--- Current Video Status ---\noffline : $offline \n --- :3 done url check ---");
       });
       videoControlSetup(url);
     }
@@ -382,10 +370,8 @@ class _YoYoPlayerState extends State<YoYoPlayer>
 // M3U8 Data Setup
   void getM3U8(String video) {
     if (yoyo.length > 0) {
-      print("${yoyo.length} : data start clean");
       m3u8clean();
     }
-    print("---- m3u8 fitch start ----\n$video\n--- please wait –––");
     m3u8video(video);
   }
 
@@ -404,7 +390,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
     setState(
       () {
         if (m3u8Content != null) {
-          print("--- HLS Old Data ----\n$m3u8Content");
           m3u8Content = null;
         }
       },
@@ -418,8 +403,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
     List<RegExpMatch> matches = regExp.allMatches(m3u8Content!).toList();
     List<RegExpMatch> audioMatches =
         regExpAudio.allMatches(m3u8Content!).toList();
-    print(
-        "--- HLS Data ----\n$m3u8Content \ntotal length: ${yoyo.length} \nfinish");
 
     matches.forEach(
       (RegExpMatch regExpMatch) async {
@@ -433,10 +416,8 @@ class _YoYoPlayerState extends State<YoYoPlayer>
         if (isNetwork) {
           url = sourceURL;
         } else {
-          print(match);
           final dataURL = match!.group(0);
           url = "$dataURL$sourceURL";
-          print("--- hls child url integration ---\nchild url :$url");
         }
         audioMatches.forEach(
           (RegExpMatch regExpMatch2) async {
@@ -447,17 +428,13 @@ class _YoYoPlayerState extends State<YoYoPlayer>
             if (isNetwork) {
               auURL = audioURL;
             } else {
-              print(match);
               final auDataURL = match!.group(0);
               auURL = "$auDataURL$audioURL";
-              print("url network audio  $url $audioURL");
             }
             audioList.add(AUDIO(url: auURL));
-            print(audioURL);
           },
         );
         String audio = "";
-        print("-- audio ---\naudio list length :${audio.length}");
         if (audioList.length != 0) {
           audio =
               """#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio-medium",NAME="audio",AUTOSELECT=YES,DEFAULT=YES,CHANNELS="2",URI="${audioList.last.url}"\n""";
@@ -480,8 +457,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
       },
     );
     M3U8s m3u8s = M3U8s(m3u8s: yoyo);
-    print(
-        "--- m3u8 file write ---\n${yoyo.map((e) => e.dataQuality == e.dataURL).toList()}\nlength : ${yoyo.length}\nSuccess");
     return m3u8s;
   }
 
@@ -515,6 +490,11 @@ class _YoYoPlayerState extends State<YoYoPlayer>
 // video Listener
   void listener() async {
     if (controller!.value.isInitialized && controller!.value.isPlaying) {
+      wasPlaying = true;
+      if(widget.onPlaying != null){
+        widget.onPlaying!(widget.urls[currentPlayingIndex]);
+      }
+
       if (!await Wakelock.enabled) {
         await Wakelock.enable();
       }
@@ -531,6 +511,11 @@ class _YoYoPlayerState extends State<YoYoPlayer>
     } else {
       if (await Wakelock.enabled) {
         await Wakelock.disable();
+      }
+      if(wasPlaying && controller!.value.position >= controller!.value.duration && widget.onPlayEnd != null){
+          wasPlaying = false;
+          _playNext();
+          widget.onPlayEnd!();
       }
     }
   }
@@ -591,9 +576,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
 
   void videoInit(String? url) {
     if (offline == false) {
-      print(
-          "--- Player Status ---\nplay url : $url\noffline : $offline\n--- start playing –––");
-
       if (playType == "MP4") {
         // Play MP4
         controller =
@@ -614,8 +596,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
                   .catchError((e) => setState(() => hasInitError = true));
       }
     } else {
-      print(
-          "--- Player Status ---\nplay url : $url\noffline : $offline\n--- start playing –––");
       controller = VideoPlayerController.file(File(url!))
         ..initialize()
             .then((value) => setState(() { 
@@ -638,6 +618,9 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   }
 
   void onSelectQuality(M3U8pass data) async {
+    setState(() {
+      currentm3u8Data = data;
+    });
     controller!.value.isPlaying ? controller!.pause() : controller!.pause();
     if (data.dataQuality == "Auto") {
       videoControlSetup(data.dataURL);
@@ -647,9 +630,7 @@ class _YoYoPlayerState extends State<YoYoPlayer>
         final Directory directory = await getApplicationDocumentsDirectory();
         final File file =
             File('${directory.path}/yoyo${data.dataQuality}.m3u8');
-        print("read file success");
         text = await file.readAsString();
-        print("data : $text  :: data");
         localM3U8play(file);
         // videoControlSetup(file);
       } catch (e) {
@@ -673,26 +654,22 @@ class _YoYoPlayerState extends State<YoYoPlayer>
   }
 
   void m3u8clean() async {
-    print(yoyo.length);
     for (int i = 2; i < yoyo.length; i++) {
       try {
         final Directory directory = await getApplicationDocumentsDirectory();
         final File file = File('${directory.path}/${yoyo[i].dataQuality}.m3u8');
         file.delete();
-        print("delete success $file");
       } catch (e) {
         print("Couldn't delete file $e");
       }
     }
     try {
-      print("Audio m3u8 list clean");
       audioList.clear();
     } catch (e) {
       print("Audio list clean error $e");
     }
     audioList.clear();
     try {
-      print("m3u8 data list clean");
       yoyo.clear();
     } catch (e) {
       print("m3u8 video list clean error $e");
