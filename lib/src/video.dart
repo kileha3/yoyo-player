@@ -41,11 +41,9 @@ class YoYoPlayer extends StatefulWidget {
   final void Function(Duration playPosition)? onPlayerDurationChanged;
 
   /// video Type
-  final void Function(String videoType)? onPlayingVideo;
+  final void Function(String videoType, int index)? onPlayingVideo;
 
   final void Function()? onPlayEnd; 
-
-  final void Function(String url)? onPlaying; 
 
   final List<String> filterQuality;
 
@@ -58,7 +56,6 @@ class YoYoPlayer extends StatefulWidget {
     this.onFullScreen,
     this.onPlayingVideo,
     this.onPlayEnd,
-    this.onPlaying,
     this.seekToDuration = const Duration(),
     this.filterQuality = const ["Auto","SD", "HD", "Full HD", "UHD", "4K"],
     this.onPlayerDurationChanged,
@@ -172,9 +169,6 @@ class _YoYoPlayerState extends State<YoYoPlayer>
       print("Current playing at $currentPlayingIndex");
       currentm3u8Data = M3U8pass(label: widget.filterQuality.first, dataURL: url);
       urlCheck(currentm3u8Data.dataURL!);
-      if (widget.onPlaying != null) {
-        widget.onPlaying!(widget.urls[currentPlayingIndex]);
-      }
     }
   }
 
@@ -337,21 +331,21 @@ class _YoYoPlayerState extends State<YoYoPlayer>
         setState(() {
           playType = "MKV";
         });
-        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MKV");
+        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MKV", currentPlayingIndex);
 
         videoControlSetup(url);
       } else if (a.pathSegments.last.endsWith("mp4")) {
         setState(() {
           playType = "MP4";
         });
-        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MP4");
+        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("MP4", currentPlayingIndex);
         videoControlSetup(url);
       } else if (a.pathSegments.last.endsWith("m3u8")) {
         setState(() {
           playType = "HLS";
         });
 
-        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("M3U8");
+        if (widget.onPlayingVideo != null) widget.onPlayingVideo!("M3U8", currentPlayingIndex);
         setState(() {
           currentm3u8Data = M3U8pass(dataURL: url, 
           label: widget.filterQuality.first);

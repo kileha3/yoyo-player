@@ -37,7 +37,7 @@ class _MyAppState extends State<MyApp> {
                   "http://d3rlna7iyyu8wu.cloudfront.net/skip_armstrong/skip_armstrong_multi_language_subs.m3u8",
                   "http://sample.vodobox.com/we_are_blood_4k/we_are_blood_4k.m3u8"],
               videoStyle: VideoStyle(),
-              onPlaying: (url){
+              onPlayingVideo: (type, index){
                 //print("Currently playing: $url");
               },
               videoLoadingStyle: VideoLoadingStyle(
